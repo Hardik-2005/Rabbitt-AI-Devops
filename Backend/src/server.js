@@ -17,7 +17,9 @@ const app = express();
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
-
+app.get("/", (req, res) => {
+  res.send("Rabbit AI DevOps Backend Running 🚀");
+});
 // ── Swagger / OpenAPI docs ────────────────────────────────────────────────────
 const swaggerOptions = {
   definition: {
