@@ -1,0 +1,51 @@
+services:
+  # ── Backend ────────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: sia-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./Backend/.env          # loads PORT, GEMINI_API_KEY, SMTP_* etc.
+    volumes:
+      # Persist uploaded files across restarts without rebuilding the image
+      - backend_uploads:/app/uploads
+    networks:
+      - sia-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── Frontend ───────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    container_name: sia-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      # The browser runs on the HOST machine, not inside Docker.
+      # It must use localhost:5000 (the published port), not the internal "backend" hostname.
+      - VITE_API_BASE_URL=http://localhost:5000
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - sia-net
+
+# ── Shared network ─────────────────────────────────────────────────────────
+networks:
+  sia-net:
+    driver: bridge
+
+# ── Named volumes ─────────────────────────────────────────────────────────
+volumes:
+  backend_uploads:
